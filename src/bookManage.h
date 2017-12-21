@@ -41,8 +41,8 @@ typedef struct book {
 
 typedef struct borrow {
     int borrow_id;
+    int user_id;
     int book_id;
-    int borrow_number;
     struct borrow *next;
 } borrow;
 
@@ -75,6 +75,22 @@ void adminReaderDel(WINDOW *win);
 void adminReaderFind(WINDOW *win);
 void adminReaderFindByUserStid(WINDOW *win);
 void adminReaderFindByUserName(WINDOW *win);
+
+void adminBook(WINDOW *win);
+void adminBookAdd(WINDOW *win);
+void adminBookList(WINDOW *win);
+void adminBookModify(WINDOW *win);
+void adminBookDel(WINDOW *win);
+void adminBookFind(WINDOW *win);
+void adminBookFindByBookIsbn(WINDOW *win);
+void adminBookFindByBookName(WINDOW *win);
+
+void adminBorrow(WINDOW *win);
+void adminBorrowBorrow(WINDOW *win);
+void adminBorrowReturn(WINDOW *win);
+void adminBorrowList(WINDOW *win);
+
+void adminInfo(WINDOW *win);
 
 void userFunc(WINDOW *win);
 

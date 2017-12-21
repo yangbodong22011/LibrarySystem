@@ -31,6 +31,7 @@ int readUser();
 int writeUser();
 user *getUserByUserStid(char *user_stid);
 user *getUserByUserName(char *user_name);
+user *getUserByUserId(int user_id);
 
 int readPasswd();
 int writePasswd();
@@ -38,5 +39,14 @@ passwd *getPasswdByUserId(int user_id);
 
 int readLog();
 int writeLog();
+
+int readBook();
+int writeBook();
+book *getBookByBookIsbn(char *book_isbn);
+book *getBookByBookName(char *book_name);
+book *getBookByBookId(int book_id);
+
+int readBorrow();
+int writeBorrow();
 
 #endif //BOOKMANAGE_FILE_H

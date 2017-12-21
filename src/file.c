@@ -91,7 +91,19 @@ user *getUserByUserName(char *user_name) {
         p = p->next;
     }
     q->next = NULL;
-    return h->next;
+    return h;
+}
+
+user *getUserByUserId(int user_id) {
+    user *p = USER_HEAD->next;
+
+    while (p) {
+        if (p->user_id == user_id) {
+            return p;
+        }
+        p = p->next;
+    }
+    return NULL;
 }
 
 int readPasswd() {
@@ -125,8 +137,6 @@ int readPasswd() {
     fclose(fp);
     return 0;
 }
-
-
 
 int writePasswd() {
     FILE *fp;
@@ -210,8 +220,155 @@ int writeLog() {
     return 0;
 }
 
+int readBook() {
+    FILE *fp;
+    book *p = (book *) malloc(sizeof(book));
+    book *q = (book *) malloc(sizeof(book));
+    BOOK_HEAD = p;
+    BOOK_MAXID = -1;
+
+    fp = fopen(BOOK_PATH, "r+");
+    if (fp == NULL) {
+        fp = fopen(BOOK_PATH, "w+");
+        free(q);
+        return 0;
+    }
+
+    while (!feof(fp)) {
+        fscanf(fp, "%d %s %s %s %d %lf\n", &(q->book_id), q->book_isbn, q->book_name,
+               q->book_author, &(q->book_number), &(q->book_price));
+
+        /* update book_MAXID*/
+        if (q->book_id > BOOK_MAXID) {
+            BOOK_MAXID = q->book_id;
+        }
+
+        p->next = q;
+        p = q;
+        q = (book *) malloc(sizeof(book));
+    }
+
+    p->next = NULL;
+    free(q);
+    fclose(fp);
+    return 0;
+
+}
+
+int writeBook() {
+    FILE *fp;
+    fp = fopen(BOOK_PATH, "w+");
+    if (fp == NULL) {
+        perror("write_book() fopen error");
+        return -1;
+    }
+
+    book *p = BOOK_HEAD->next;
+    while (p) {
+        fprintf(fp, "%d %s %s %s %d %lf\n", p->book_id, p->book_isbn, p->book_name,
+                p->book_author, p->book_number, p->book_price);
+        p = p->next;
+    }
+    fclose(fp);
+    return 0;
+}
+
+book *getBookByBookIsbn(char *book_isbn) {
+    book *p = BOOK_HEAD->next;
+
+    while (p) {
+        if (strcmp(p->book_isbn, book_isbn) == 0) {
+            return p;
+        }
+        p = p->next;
+    }
+    return NULL;
+}
+
+book *getBookByBookName(char *book_name) {
+    book *p = BOOK_HEAD->next;
+    book *h = (book *) malloc(sizeof(book));
+    book *q = h;
+    book *t;
+
+    while (p) {
+        if (strcmp(p->book_name, book_name) == 0) {
+            t = (book *) malloc(sizeof(book));
+            memcpy(t, p, sizeof(book));
+            q->next = t;
+            q = t;
+        }
+        p = p->next;
+    }
+    q->next = NULL;
+    return h;
+}
+
+book *getBookByBookId(int book_id) {
+    book *p = BOOK_HEAD->next;
+
+    while (p) {
+        if (p->book_id == book_id) {
+            return p;
+        }
+        p = p->next;
+    }
+    return NULL;
+}
+
+int readBorrow() {
+    FILE *fp;
+    borrow *p = (borrow *) malloc(sizeof(borrow));
+    borrow *q = (borrow *) malloc(sizeof(borrow));
+    BORROW_HEAD = p;
+    BORROW_MAXID = -1;
+
+    fp = fopen(BORROW_PATH, "r+");
+    if (fp == NULL) {
+        fp = fopen(BORROW_PATH, "w+");
+        free(q);
+        return 0;
+    }
+
+    while (!feof(fp)) {
+        fscanf(fp, "%d %d %d\n", &(q->borrow_id), &(q->user_id), &(q->book_id));
+        /* update borrow_MAXID*/
+        if (q->borrow_id > BORROW_MAXID) {
+            BORROW_MAXID = q->borrow_id;
+        }
+
+        p->next = q;
+        p = q;
+        q = (borrow *) malloc(sizeof(borrow));
+    }
+
+    p->next = NULL;
+    free(q);
+    fclose(fp);
+    return 0;
+}
+
+int writeBorrow() {
+    FILE *fp;
+    fp = fopen(BORROW_PATH, "w+");
+    if (fp == NULL) {
+        perror("write_borrow() fopen error");
+        return -1;
+    }
+
+    borrow *p = BORROW_HEAD->next;
+    while (p) {
+        fprintf(fp, "%d %d %d\n", p->borrow_id, p->user_id, p->book_id);
+        p = p->next;
+    }
+    fclose(fp);
+    return 0;
+}
+
 int dataInit() {
     readUser();
     readPasswd();
     readLog();
+    readBook();
+    readBorrow();
 }

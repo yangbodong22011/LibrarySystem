@@ -47,3 +47,32 @@ void menuAdminUserFind(WINDOW *win) {
     mvwprintw(win, 4, 1, "input choice:");
     wrefresh(win);
 }
+
+void menuAdminBook(WINDOW *win) {
+    mvwprintw(win, 1, 1, "1. book list");
+    mvwprintw(win, 2, 1, "2. book add");
+    mvwprintw(win, 3, 1, "3. book del");
+    mvwprintw(win, 4, 1, "4. book modify");
+    mvwprintw(win, 5, 1, "5. book find");
+    mvwprintw(win, 6, 1, "0. back to previous");
+    mvwprintw(win, 7, 1, "input choice:");
+    wrefresh(win);
+}
+
+
+void menuAdminBookFind(WINDOW *win) {
+    mvwprintw(win, 1, 1, "1. find by book_stid");
+    mvwprintw(win, 2, 1, "2. find by book_name");
+    mvwprintw(win, 3, 1, "0. back to previous");
+    mvwprintw(win, 4, 1, "input choice:");
+    wrefresh(win);
+}
+
+void menuAdminBorrow(WINDOW *win) {
+    mvwprintw(win, 1, 1, "1. borrow book");
+    mvwprintw(win, 2, 1, "2. return book");
+    mvwprintw(win, 3, 1, "3. list borrow");
+    mvwprintw(win, 4, 1, "0. back to previous");
+    mvwprintw(win, 5, 1, "input choice:");
+    wrefresh(win);
+}

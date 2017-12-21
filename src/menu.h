@@ -10,7 +10,12 @@
 
 void menuLogin(WINDOW *win);
 void menuAdmin(WINDOW *win);
-void menuUser(WINDOW *win);
 void menuAdminUser(WINDOW *win);
 void menuAdminUserFind(WINDOW *win);
+void menuAdminBook(WINDOW *win);
+void menuAdminBookFind(WINDOW *win);
+void menuAdminBorrow(WINDOW *win);
+
+void menuUser(WINDOW *win);
+
 #endif //BOOKMANAGE_MENU_H

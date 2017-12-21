@@ -145,14 +145,17 @@ void adminReaderAdd(WINDOW *win) {
         p = USER_HEAD;
         while (p->next) p = p->next;
         q = (user *) malloc(sizeof(user));
+        q->next = NULL;
 
         v = PASSWD_HEAD;
         while (v->next) v = v->next;
         w = (passwd *) malloc(sizeof(passwd));
+        w->next = NULL;
 
         y = LOG_HEAD;
         while (y->next) y = y->next;
         z = (log *) malloc(sizeof(log));
+        z->next = NULL;
 
         q->user_id = ++USER_MAXID;
         w->passwd_id = ++PASSWD_MAXID;
@@ -263,6 +266,7 @@ void adminReaderDel(WINDOW *win) {
         y = LOG_HEAD;
         while (y->next) y = y->next;
         z = (log *) malloc(sizeof(log));
+        z->next = NULL;
 
         LOCK;
         clearWindow(win);
@@ -453,7 +457,7 @@ void adminReaderFindByUserStid(WINDOW *win) {
 void adminReaderFindByUserName(WINDOW *win) {
     int index = 3;
     char user_name[16];
-    user *p;
+    user *p, *q, *t;
 
     LOCK;
     clearWindow(win);
@@ -462,17 +466,21 @@ void adminReaderFindByUserName(WINDOW *win) {
     UNLOCK;
     wscanw(win, "%s", user_name);
 
-    //p = getUserByUserStid(user_stid);
-    p = getUserByUserName(user_name);
+    q = getUserByUserName(user_name);
+    p = q->next;
 
     if (p) {
         LOCK;
         while (p) {
             mvwprintw(win, index, 1, "%d. %s %s %s %s %s\n", p->user_id, p->user_stid, p->user_name, p->user_address,
                       p->user_mail, p->user_status == 0 ? "admin" : "user");
+            t = p;
             p = p->next;
+            /* need to free */
+            free(t);
             index += 1;
         }
+        free(q);
         mvwprintw(win, WIN_MENU.height - 2, 1, "Press any key to <quit>");
         wrefresh(win);
         UNLOCK;
@@ -562,6 +570,644 @@ void adminReader(WINDOW *win) {
     UNLOCK;
 }
 
+void adminBookAdd(WINDOW *win) {
+    int choice;
+    int retb, retl;
+    book *p, *q;
+    log *y, *z;
+
+    do {
+        p = BOOK_HEAD;
+        while (p->next) p = p->next;
+        q = (book *) malloc(sizeof(book));
+        q->next = NULL;
+
+
+        y = LOG_HEAD;
+        while (y->next) y = y->next;
+        z = (log *) malloc(sizeof(log));
+        z->next = NULL;
+
+        q->book_id = ++BOOK_MAXID;
+        z->log_id = ++LOG_MAXID;
+
+        LOCK;
+        clearWindow(win);
+        mvwprintw(win, 1, 1, "1. please input book_isbn:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%s", q->book_isbn);
+
+        LOCK;
+        mvwprintw(win, 2, 1, "2. please input book_name:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%s", q->book_name);
+
+        LOCK;
+        mvwprintw(win, 3, 1, "3. please input book_author:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%s", q->book_author);
+
+        LOCK;
+        mvwprintw(win, 4, 1, "4. please input book_number:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%d", &(q->book_number));
+
+        LOCK;
+        mvwprintw(win, 5, 1, "5. please input book_price:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%lf", &(q->book_price));
+
+        /* init log  */
+        z->user_id = ME->user_id;
+        z->book_id = q->book_id;
+        strcpy(z->log_content, LOG_ADD_BOOK);
+        z->log_status = 1;
+
+        /* add q and w */
+        p->next = q;
+        y->next = z;
+
+        retb = writeBook();
+        retl = writeLog();
+        /*
+         * writeUser();
+         * wrtitePasswd();
+         * writeLog();
+         * */
+        if (retb == 0 && retl == 0) {
+            LOCK;
+            mvwprintw(win, WIN_MENU.height-2, 1, "book add success");
+            wrefresh(win);
+            UNLOCK;
+        } else {
+            LOCK;
+            clearWindow(win);
+            mvwprintw(win, WIN_MENU.height-2, 1, "book add fail");
+            wrefresh(win);
+            UNLOCK;
+            return ;
+        }
+        LOCK;
+        mvwprintw(win, 7, 1, "add more ? yes<1>, no<0>:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%d", &choice);
+
+        LOCK;
+        clearWindow(win);
+        UNLOCK;
+    } while(choice != 0);
+
+}
+void adminBookList(WINDOW *win) {
+    int index = 1;
+    LOCK;
+    clearWindow(win);
+    book *p = BOOK_HEAD->next;
+    while (p) {
+        mvwprintw(win, index, 1, "%d. %s %s %s %d %f\n", p->book_id, p->book_isbn, p->book_name, p->book_author,
+                  p->book_number, p->book_price);
+        p = p->next;
+        index += 1;
+    }
+    mvwprintw(win, WIN_MENU.height-2, 1, "Press any key to <quit>");
+    wrefresh(win);
+    UNLOCK;
+
+    noecho();
+    wscanw(win, "%d", &index);
+    echo();
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+}
+
+
+void adminBookModify(WINDOW *win) {
+
+}
+
+void adminBookDel(WINDOW *win) {
+    int choice;
+    int delFlag;
+    char book_isbn[16];
+    int retb, retl;
+    book *p, *q;
+    log *y, *z;
+
+    do {
+        delFlag = 0;
+        p = BOOK_HEAD;
+        memset(book_isbn, 0, 16);
+
+        y = LOG_HEAD;
+        while (y->next) y = y->next;
+        z = (log *) malloc(sizeof(log));
+        z->next = NULL;
+
+        LOCK;
+        clearWindow(win);
+        mvwprintw(win, 1, 1, "1. please input del_book_isbn:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%s", book_isbn);
+
+        while (p->next) {
+            if (strcmp(p->next->book_isbn, book_isbn) == 0) {
+                q = p->next;
+                p->next = p->next->next;
+                delFlag = 1;
+                break;
+            }
+            p = p->next;
+        }
+
+        if (delFlag == 0) {
+            LOCK;
+            mvwprintw(win, WIN_MENU.height-2, 1, "not found this book");
+            wrefresh(win);
+            UNLOCK;
+        } else {
+
+            /* init log  */
+            z->log_id = ++LOG_MAXID;
+            z->user_id = ME->user_id;
+            z->book_id = q->book_id;
+            strcpy(z->log_content, LOG_DEL_BOOK);
+            z->log_status = 1;
+
+            y->next = z;
+
+            if (q) free(q);
+
+            retb = writeBook();
+            retl = writeLog();
+
+            if (retb == 0 && retl == 0) {
+                LOCK;
+                mvwprintw(win, WIN_MENU.height-2, 1, "book del success");
+                wrefresh(win);
+                UNLOCK;
+            }
+        }
+
+        LOCK;
+        mvwprintw(win, 7, 1, "del more ? yes<1>, no<0>:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%d", &choice);
+
+        LOCK;
+        clearWindow(win);
+        UNLOCK;
+    } while(choice != 0);
+
+}
+
+void adminBookFindByBookIsbn(WINDOW *win) {
+    int index;
+    char book_isbn[16];
+    book *p;
+
+    LOCK;
+    clearWindow(win);
+    mvwprintw(win, 1, 1, "1. please input book_isbn:");
+    wrefresh(win);
+    UNLOCK;
+    wscanw(win, "%s", book_isbn);
+
+    p = getBookByBookIsbn(book_isbn);
+
+    if (p) {
+        LOCK;
+        mvwprintw(win, 3, 1, "%d. %s %s %s %d %lf\n", p->book_id, p->book_isbn, p->book_name, p->book_author,
+                  p->book_number, p->book_price);
+        mvwprintw(win, WIN_MENU.height-2, 1, "Press any key to <quit>");
+        wrefresh(win);
+        UNLOCK;
+    } else {
+        LOCK;
+        mvwprintw(win, WIN_MENU.height-2, 1, "not found this book, Press any key to <quit>");
+        UNLOCK;
+    }
+
+    noecho();
+    wscanw(win, "%d", &index);
+    echo();
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+}
+
+void adminBookFindByBookName(WINDOW *win) {
+    int index = 3;
+    char book_name[16];
+    book *p, *q, *t;
+
+    LOCK;
+    clearWindow(win);
+    mvwprintw(win, 1, 1, "1. please input book_name:");
+    wrefresh(win);
+    UNLOCK;
+    wscanw(win, "%s", book_name);
+
+    q = getBookByBookName(book_name);
+    p = q->next;
+
+    if (p) {
+        LOCK;
+        while (p) {
+            mvwprintw(win, index, 1, "%d. %s %s %s %d %lf\n", p->book_id, p->book_isbn, p->book_name, p->book_author,
+                      p->book_number, p->book_price);
+            t = p;
+            p = p->next;
+            /* need to free */
+            free(t);
+            index += 1;
+        }
+        free(q);
+        mvwprintw(win, WIN_MENU.height - 2, 1, "Press any key to <quit>");
+        wrefresh(win);
+        UNLOCK;
+    } else {
+        LOCK;
+        mvwprintw(win, WIN_MENU.height-2, 1, "not found this book, Press any key to <quit>");
+        UNLOCK;
+    }
+
+    noecho();
+    wscanw(win, "%d", &index);
+    echo();
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+}
+
+
+void adminBookFind(WINDOW *win) {
+    int choice;
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+
+    do {
+        LOCK;
+        menuAdminBookFind(win);
+        UNLOCK;
+        wscanw(win, "%d", &choice);
+        switch (choice) {
+            case 1:
+                adminBookFindByBookIsbn(win);
+                break;
+            case 2:
+                adminBookFindByBookName(win);
+                break;
+            default:
+                LOCK;
+                mvwprintw(win, WIN_MENU.height-2, 1, "Error: choice invalid");
+                wrefresh(win);
+                UNLOCK;
+        }
+    } while (choice != 0);
+    LOCK;
+    /* clearWindow for back to previous */
+    clearWindow(win);
+    UNLOCK;
+}
+
+void adminBook(WINDOW *win) {
+    int choice;
+
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+    do {
+        LOCK;
+        menuAdminBook(win);
+        UNLOCK;
+        wscanw(win, "%d", &choice);
+        switch (choice) {
+            case 1:
+                adminBookList(win);
+                break;
+            case 2:
+                adminBookAdd(win);
+                break;
+            case 3:
+                adminBookDel(win);
+                break;
+            case 4:
+                adminBookModify(win);
+                break;
+            case 5:
+                adminBookFind(win);
+                break;
+            default:
+                LOCK;
+                mvwprintw(win, WIN_MENU.height-2, 1, "Error: choice invalid");
+                wrefresh(win);
+                UNLOCK;
+        }
+    } while (choice != 0);
+    LOCK;
+    /* clearWindow for back to previous */
+    clearWindow(win);
+    UNLOCK;
+}
+
+void adminBorrowBorrow(WINDOW *win) {
+    char book_isbn[16];
+    char user_stid[16];
+    int choice;
+    int ret, retb, retl;
+    borrow *p, *q;
+    log *y, *z;
+    book *b;
+    user *u;
+
+    do {
+        p = BORROW_HEAD;
+        while (p->next) p = p->next;
+        q = (borrow *) malloc(sizeof(borrow));
+        q->next = NULL;
+
+
+        y = LOG_HEAD;
+        while (y->next) y = y->next;
+        z = (log *) malloc(sizeof(log));
+        z->next = NULL;
+
+        q->borrow_id = ++BORROW_MAXID;
+        z->log_id = ++LOG_MAXID;
+
+        LOCK;
+        clearWindow(win);
+        mvwprintw(win, 1, 1, "1. please input book_isbn:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%s", book_isbn);
+
+        b = getBookByBookIsbn(book_isbn);
+
+        if (b && b->book_number > 0) {
+            q->book_id = b->book_id;
+            b->book_number--;
+
+            LOCK;
+            mvwprintw(win, 2, 1, "2. please input user_stid:");
+            wrefresh(win);
+            UNLOCK;
+            wscanw(win, "%s", user_stid);
+
+            u = getUserByUserStid(user_stid);
+
+            if (u) {
+                q->user_id = u->user_id;
+            } else {
+                LOCK;
+                clearWindow(win);
+                mvwprintw(win, WIN_MENU.height-2, 1, "user not found");
+                wrefresh(win);
+                UNLOCK;
+                free(q);
+                free(z);
+                return ;
+            }
+
+            /* init log  */
+            z->user_id = u->user_id;
+            z->book_id = b->book_id;
+            strcpy(z->log_content, LOG_BORROW_BOOK);
+            z->log_status = 1;
+
+            /* add q and w */
+            p->next = q;
+            y->next = z;
+
+            ret = writeBook();
+            retb = writeBorrow();
+            retl = writeLog();
+            /*
+             * writeUser();
+             * wrtitePasswd();
+             * writeLog();
+             * */
+            if (ret == 0 && retb == 0 && retl == 0) {
+                LOCK;
+                mvwprintw(win, WIN_MENU.height-2, 1, "borrow book success");
+                wrefresh(win);
+                UNLOCK;
+            } else {
+                LOCK;
+                mvwprintw(win, WIN_MENU.height-2, 1, "borrow book fail");
+                wrefresh(win);
+                UNLOCK;
+            }
+        }  else {
+            LOCK;
+            mvwprintw(win, WIN_MENU.height-2, 1, "borrow book number less or not found");
+            wrefresh(win);
+            UNLOCK;
+        }
+
+        LOCK;
+        mvwprintw(win, 7, 1, "borrow more ? yes<1>, no<0>:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%d", &choice);
+
+        LOCK;
+        clearWindow(win);
+        UNLOCK;
+    } while(choice != 0);
+}
+
+void adminBorrowReturn(WINDOW *win) {
+    int choice;
+    int delFlag;
+    char book_isbn[16];
+    char user_stid[16];
+    int ret, retb, retl;
+    borrow *p, *q;
+    log *y, *z;
+    book *b;
+    user *u;
+
+    do {
+        delFlag = 0;
+        p = BORROW_HEAD;
+        memset(book_isbn, 0, 16);
+        memset(user_stid, 0, 16);
+
+        y = LOG_HEAD;
+        while (y->next) y = y->next;
+        z = (log *) malloc(sizeof(log));
+        z->next = NULL;
+
+        LOCK;
+        clearWindow(win);
+        mvwprintw(win, 1, 1, "1. please input return_book_isbn:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%s", book_isbn);
+
+        LOCK;
+        mvwprintw(win, 1, 1, "2. please input return_user_stid:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%s", user_stid);
+
+        b = getBookByBookIsbn(book_isbn);
+        u = getUserByUserStid(user_stid);
+
+        if (b && u) {
+            while (p->next) {
+                if (p->next->book_id == b->book_id && p->next->user_id == u->user_id) {
+                    q = p->next;
+                    p->next = p->next->next;
+                    delFlag = 1;
+                    break;
+                }
+                p = p->next;
+            }
+
+            if (delFlag == 0) {
+                LOCK;
+                mvwprintw(win, WIN_MENU.height-2, 1, "not found this msg");
+                wrefresh(win);
+                UNLOCK;
+            } else {
+
+                /* init log  */
+                z->log_id = ++LOG_MAXID;
+                z->user_id = u->user_id;
+                z->book_id = b->book_id;
+                strcpy(z->log_content, LOG_RETURN_BOOK);
+                z->log_status = 1;
+
+                y->next = z;
+
+                b->book_number++;
+                if (q) free(q);
+
+                ret = writeBorrow();
+                retb = writeBook();
+                retl = writeLog();
+
+                if (ret == 0 && retb == 0 && retl == 0) {
+                    LOCK;
+                    mvwprintw(win, WIN_MENU.height-2, 1, "book return success");
+                    wrefresh(win);
+                    UNLOCK;
+                }
+            }
+        } else {
+            LOCK;
+            mvwprintw(win, WIN_MENU.height-2, 1, "getbook or getuser return null");
+            wrefresh(win);
+            UNLOCK;
+        }
+
+        LOCK;
+        mvwprintw(win, 7, 1, "return more ? yes<1>, no<0>:");
+        wrefresh(win);
+        UNLOCK;
+        wscanw(win, "%d", &choice);
+
+        LOCK;
+        clearWindow(win);
+        UNLOCK;
+    } while(choice != 0);
+}
+
+
+void adminBorrowList(WINDOW *win) {
+    int index = 1;
+    book *b;
+    user *u;
+    LOCK;
+    clearWindow(win);
+    borrow *p = BORROW_HEAD->next;
+    while (p) {
+        b = getBookByBookId(p->book_id);
+        u = getUserByUserId(p->user_id);
+        if (b && u) {
+            mvwprintw(win, index, 1, "%d. %s->%s\n", p->borrow_id, u->user_name, b->book_name);
+        }
+        p = p->next;
+        index += 1;
+    }
+    mvwprintw(win, WIN_MENU.height-2, 1, "Press any key to <quit>");
+    wrefresh(win);
+    UNLOCK;
+
+    noecho();
+    wscanw(win, "%d", &index);
+    echo();
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+}
+
+
+void adminBorrow(WINDOW *win) {
+    int choice;
+
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+    do {
+        LOCK;
+        menuAdminBorrow(win);
+        UNLOCK;
+        wscanw(win, "%d", &choice);
+        switch (choice) {
+            case 1:
+                adminBorrowBorrow(win);
+                break;
+            case 2:
+                adminBorrowReturn(win);
+                break;
+            case 3:
+                adminBorrowList(win);
+            default:
+                LOCK;
+                mvwprintw(win, WIN_MENU.height-2, 1, "Error: choice invalid");
+                wrefresh(win);
+                UNLOCK;
+        }
+    } while (choice != 0);
+    LOCK;
+    /* clearWindow for back to previous */
+    clearWindow(win);
+    UNLOCK;
+}
+
+void adminInfo(WINDOW *win) {
+    int index;
+    LOCK;
+    clearWindow(win);
+    mvwprintw(win, 1, 1, "The system total have %d users", USER_MAXID);
+    mvwprintw(win, 2, 1, "The system total have %d books", BOOK_HEAD);
+    mvwprintw(win, 3, 1, "The system total have %d borrows", BORROW_HEAD);
+    mvwprintw(win, WIN_MENU.height-2, 1, "Press any key to <quit>");
+    wrefresh(win);
+    UNLOCK;
+
+    noecho();
+    wscanw(win, "%d", &index);
+    echo();
+    LOCK;
+    clearWindow(win);
+    UNLOCK;
+
+}
+
 void adminFunc(WINDOW *win) {
     int choice;
 
@@ -578,10 +1224,13 @@ void adminFunc(WINDOW *win) {
                 adminReader(win);
                 break;
             case 2:
+                adminBook(win);
                 break;
             case 3:
+                adminBorrow(win);
                 break;
             case 4:
+                adminInfo(win);
                 break;
             default:
                 LOCK;
