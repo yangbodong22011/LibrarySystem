@@ -7,6 +7,7 @@
 
 
 #include <stdint.h>
+#include <ncurses.h>
 
 #define LOCK pthread_mutex_lock(&MUTEX)
 #define UNLOCK pthread_mutex_unlock(&MUTEX)
@@ -49,11 +50,32 @@ typedef struct log {
     int log_id;
     int user_id;
     int book_id;
-    char log_time[32];
     char log_content[32];
+    uint8_t log_status;
+    char log_time[32];
     struct log *next;
 } log;
 
+char *getTimeNow();
+void *threadTitle(void *p);
+void *threadMenu(void *p);
+void *threadNews(void *p);
 
+void loop(WINDOW *win);
+int loginSys(WINDOW *win);
 void initMe(user *u);
+
+
+void adminFunc(WINDOW *win);
+void adminReader(WINDOW *win);
+void adminReaderAdd(WINDOW *win);
+void adminReaderList(WINDOW *win);
+void adminReaderModify(WINDOW *win);
+void adminReaderDel(WINDOW *win);
+void adminReaderFind(WINDOW *win);
+void adminReaderFindByUserStid(WINDOW *win);
+void adminReaderFindByUserName(WINDOW *win);
+
+void userFunc(WINDOW *win);
+
 #endif //BOOKMANAGE_BOOKMANAGE_H

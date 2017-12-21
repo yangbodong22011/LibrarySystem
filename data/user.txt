@@ -1,2 +1,2 @@
-0 88888888 root root 12563748@qq.com 0
-1 03141001 YangBodong software1404 491219935@qq.com 1
+0 8 root teacher root@qq.com 0
+1 2222 2222 2222 2222@qq.com 1

@@ -3,7 +3,6 @@
 //
 
 #include "win.h"
-#include <pthread.h>
 
 void initWin(WIN *p_win, int height, int width, int starty, int startx) {
     p_win->height = height;

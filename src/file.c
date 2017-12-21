@@ -75,6 +75,25 @@ user *getUserByUserStid(char *user_stid) {
     return NULL;
 }
 
+user *getUserByUserName(char *user_name) {
+    user *p = USER_HEAD->next;
+    user *h = (user *) malloc(sizeof(user));
+    user *q = h;
+    user *t;
+
+    while (p) {
+        if (strcmp(p->user_name, user_name) == 0) {
+            t = (user *) malloc(sizeof(user));
+            memcpy(t, p, sizeof(user));
+            q->next = t;
+            q = t;
+        }
+        p = p->next;
+    }
+    q->next = NULL;
+    return h->next;
+}
+
 int readPasswd() {
     FILE *fp;
     passwd *p = (passwd *) malloc(sizeof(passwd));
@@ -139,7 +158,60 @@ passwd *getPasswdByUserId(int user_id) {
     return NULL;
 }
 
+int readLog() {
+    FILE *fp;
+    log *p = (log *) malloc(sizeof(log));
+    log *q = (log *) malloc(sizeof(log));
+    LOG_HEAD = p;
+    LOG_MAXID = -1;
+
+    fp = fopen(LOG_PATH, "r+");
+    if (fp == NULL) {
+        fp = fopen(LOG_PATH, "w+");
+        free(q);
+        return 0;
+    }
+
+    while (!feof(fp)) {
+        fscanf(fp, "%d %d %d %s %d\n", &(q->log_id), &(q->user_id), &(q->book_id),
+                q->log_content, &(q->log_status));
+
+        /* update log_MAXID*/
+        if (q->log_id > LOG_MAXID) {
+            LOG_MAXID = q->log_id;
+        }
+
+        p->next = q;
+        p = q;
+        q = (log *) malloc(sizeof(log));
+    }
+
+    p->next = NULL;
+    free(q);
+    fclose(fp);
+    return 0;
+}
+
+int writeLog() {
+    FILE *fp;
+    fp = fopen(LOG_PATH, "w+");
+    if (fp == NULL) {
+        perror("write_log() fopen error");
+        return -1;
+    }
+
+    log *p = LOG_HEAD->next;
+    while (p) {
+        fprintf(fp, "%d %d %d %s %d\n", p->log_id, p->user_id, p->book_id,
+               p->log_content, p->log_status);
+        p = p->next;
+    }
+    fclose(fp);
+    return 0;
+}
+
 int dataInit() {
     readUser();
     readPasswd();
+    readLog();
 }

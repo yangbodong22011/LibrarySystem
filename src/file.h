@@ -30,8 +30,13 @@ int dataInit();
 int readUser();
 int writeUser();
 user *getUserByUserStid(char *user_stid);
+user *getUserByUserName(char *user_name);
+
 int readPasswd();
 int writePasswd();
 passwd *getPasswdByUserId(int user_id);
+
+int readLog();
+int writeLog();
 
 #endif //BOOKMANAGE_FILE_H

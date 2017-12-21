@@ -1,0 +1,8 @@
+0 1 -1 useradd 0
+1 1 -1 useradd 0
+2 1 -1 useradd 0
+3 1 -1 useradd 0
+4 2 -1 useradd 0
+5 1 -1 userdel 0
+6 2 -1 userdel 0
+7 1 -1 useradd 0

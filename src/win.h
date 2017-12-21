@@ -7,6 +7,7 @@
 
 #include <curses.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 typedef struct _WIN_struct {
     int startx, starty;
