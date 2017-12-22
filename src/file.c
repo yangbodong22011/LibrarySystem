@@ -2,8 +2,6 @@
 // Created by yangbodong on 12/20/17.
 //
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -149,6 +147,7 @@ int writePasswd() {
     passwd *p = PASSWD_HEAD->next;
     while (p) {
         fprintf(fp, "%d %d %s\n", p->passwd_id, p->user_id, p->passwd_content);
+
         p = p->next;
     }
 

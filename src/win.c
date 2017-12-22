@@ -20,8 +20,8 @@ void initWindow() {
 
     /* init location */
     initWin(&WIN_TITLE, LINES*0.25, COLS, 0 , 0);
-    initWin(&WIN_MENU, LINES*0.75, COLS*0.75, LINES*0.25, 0);
-    initWin(&WIN_NEWS, LINES*0.75, COLS*0.25, LINES*0.25, COLS*0.75);
+    initWin(&WIN_MENU, LINES*0.75, COLS*0.60, LINES*0.25, 0);
+    initWin(&WIN_NEWS, LINES*0.75, COLS*0.40, LINES*0.25, COLS*0.60);
 
     /*init mutex */
     pthread_mutex_init(&MUTEX, NULL);

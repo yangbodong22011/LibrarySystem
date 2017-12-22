@@ -117,7 +117,7 @@ void adminReaderList(WINDOW *win) {
     clearWindow(win);
     user *p = USER_HEAD->next;
     while (p) {
-        mvwprintw(win, index, 1, "%d. %s %s %s %s %s\n", p->user_id, p->user_stid, p->user_name, p->user_address,
+        mvwprintw(win, index, 1, "%d. %s %s %s %s %s", p->user_id, p->user_stid, p->user_name, p->user_address,
                 p->user_mail, p->user_status == 0 ? "admin":"user");
         p = p->next;
         index += 1;
@@ -670,7 +670,7 @@ void adminBookList(WINDOW *win) {
     clearWindow(win);
     book *p = BOOK_HEAD->next;
     while (p) {
-        mvwprintw(win, index, 1, "%d. %s %s %s %d %f\n", p->book_id, p->book_isbn, p->book_name, p->book_author,
+        mvwprintw(win, index, 1, "%d. %s %s %s %d %f", p->book_id, p->book_isbn, p->book_name, p->book_author,
                   p->book_number, p->book_price);
         p = p->next;
         index += 1;
@@ -785,7 +785,7 @@ void adminBookFindByBookIsbn(WINDOW *win) {
 
     if (p) {
         LOCK;
-        mvwprintw(win, 3, 1, "%d. %s %s %s %d %lf\n", p->book_id, p->book_isbn, p->book_name, p->book_author,
+        mvwprintw(win, 3, 1, "%d. %s %s %s %d %lf", p->book_id, p->book_isbn, p->book_name, p->book_author,
                   p->book_number, p->book_price);
         mvwprintw(win, WIN_MENU.height-2, 1, "Press any key to <quit>");
         wrefresh(win);
@@ -822,7 +822,7 @@ void adminBookFindByBookName(WINDOW *win) {
     if (p) {
         LOCK;
         while (p) {
-            mvwprintw(win, index, 1, "%d. %s %s %s %d %lf\n", p->book_id, p->book_isbn, p->book_name, p->book_author,
+            mvwprintw(win, index, 1, "%d. %s %s %s %d %lf", p->book_id, p->book_isbn, p->book_name, p->book_author,
                       p->book_number, p->book_price);
             t = p;
             p = p->next;
@@ -1192,9 +1192,9 @@ void adminInfo(WINDOW *win) {
     int index;
     LOCK;
     clearWindow(win);
-    mvwprintw(win, 1, 1, "The system total have %d users", USER_MAXID);
-    mvwprintw(win, 2, 1, "The system total have %d books", BOOK_HEAD);
-    mvwprintw(win, 3, 1, "The system total have %d borrows", BORROW_HEAD);
+    mvwprintw(win, 1, 1, "The system total have %d users", ++USER_MAXID);
+    mvwprintw(win, 2, 1, "The system total have %d books", ++BOOK_MAXID);
+    mvwprintw(win, 3, 1, "The system total have %d borrows", ++BORROW_MAXID);
     mvwprintw(win, WIN_MENU.height-2, 1, "Press any key to <quit>");
     wrefresh(win);
     UNLOCK;
@@ -1327,22 +1327,42 @@ void *threadMenu(void *p) {
 
 void *threadNews(void *p) {
     WINDOW *windowNews;
+    log *l;
+    user *u;
+    book *b;
+
     LOCK;
     windowNews = createWindow(WIN_NEWS);
     UNLOCK;
-
-    int x = 1;
     for (;;) {
-        LOCK;
-        for (int i = 0; i < 5; ++i) {
-            mvwprintw(windowNews, x, 2, "%d. %s   %s\n", i, getTimeNow(), "a borrow a book from c");
-            x += 2;
+        int x = 1;
+        if (LOG_HEAD == NULL) {
+            continue;
         }
-        wrefresh(windowNews);
-        //wclear(windowNews);
+        l = LOG_HEAD->next;
+        LOCK;
+        for (int i = 0; i < 10; ++i) {
+            if (l) {
+                if (l->log_status == 0) {
+                    u = getUserByUserId(l->user_id);
+                    mvwprintw(windowNews, x, 1, "%d. %s : %s", l->log_id, u->user_name, l->log_content);
+                } else if (l->log_status == 1) {
+                    u = getUserByUserId(l->user_id);
+                    b = getBookByBookId(l->book_id);
+                    mvwprintw(windowNews, x, 1, "%d. %s : %s : %s", l->log_id, u->user_name, b->book_name, l->log_content);
+                }
+                l = l->next;
+                wrefresh(windowNews);
+            }
+            x += 1;
+        }
         UNLOCK;
 
         sleep(5);
+
+        LOCK;
+        clearWindow(windowNews);
+        UNLOCK;
     }
 }
 
