@@ -5,32 +5,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "file.h"
 
 int readUser() {
-    FILE *fp;
+    int fd;
+    int size;
     user *p = (user *) malloc(sizeof(user));
     user *q = (user *) malloc(sizeof(user));
     USER_HEAD = p;
-    USER_MAXID = -1;
+    USER_MAXID = 0;
 
-    fp = fopen(USER_PATH, "r+");
-    if (fp == NULL) {
-        fp = fopen(USER_PATH, "w+");
-        free(q);
-        return 0;
+    fd = open(USER_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
-    while (!feof(fp)) {
-        fscanf(fp, "%d %s %s %s %s %d\n", &(q->user_id), q->user_stid,
-               q->user_name, q->user_address, q->user_mail, &(q->user_status));
-
-        /* update USER_MAXID*/
+    while ((size = read(fd, q, sizeof(user))) != 0) {
         if (q->user_id > USER_MAXID) {
             USER_MAXID = q->user_id;
         }
-
         p->next = q;
         p = q;
         q = (user *) malloc(sizeof(user));
@@ -38,26 +37,26 @@ int readUser() {
 
     p->next = NULL;
     free(q);
-    fclose(fp);
+    close(fd);
     return 0;
 }
 
 int writeUser() {
-    FILE *fp;
-    fp = fopen(USER_PATH, "w+");
-    if (fp == NULL) {
-        perror("write_user() fopen error");
-        return -1;
+    int fd;
+
+    fd = open(USER_PATH, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
     user *p = USER_HEAD->next;
     while (p) {
-        fprintf(fp, "%d %s %s %s %s %d\n", p->user_id, p->user_stid,
-                p->user_name, p->user_address, p->user_mail, p->user_status);
+        write(fd, p, sizeof(user));
         p = p->next;
     }
 
-    fclose(fp);
+    close(fd);
     return 0;
 }
 
@@ -105,23 +104,20 @@ user *getUserByUserId(int user_id) {
 }
 
 int readPasswd() {
-    FILE *fp;
+    int fd;
+    int size;
     passwd *p = (passwd *) malloc(sizeof(passwd));
     passwd *q = (passwd *) malloc(sizeof(passwd));
     PASSWD_HEAD = p;
-    PASSWD_MAXID = -1;
+    PASSWD_MAXID = 0;
 
-    fp = fopen(PASSWD_PATH, "r+");
-    if (fp == NULL) {
-        fp = fopen(PASSWD_PATH, "w+");
-        free(q);
-        return 0;
+    fd = open(PASSWD_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
-    while (!feof(fp)) {
-        fscanf(fp, "%d %d %s\n", &(q->passwd_id), &(q->user_id), q->passwd_content);
-
-        /* update PASSWD_MAXID*/
+    while ((size = read(fd, q, sizeof(passwd))) != 0) {
         if (q->passwd_id > PASSWD_MAXID) {
             PASSWD_MAXID = q->passwd_id;
         }
@@ -132,26 +128,26 @@ int readPasswd() {
 
     p->next = NULL;
     free(q);
-    fclose(fp);
+    close(fd);
     return 0;
 }
 
 int writePasswd() {
-    FILE *fp;
-    fp = fopen(PASSWD_PATH, "w+");
-    if (fp == NULL) {
-        perror("write_passwd() fopen error");
-        return -1;
+    int fd;
+
+    fd = open(PASSWD_PATH, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
     passwd *p = PASSWD_HEAD->next;
     while (p) {
-        fprintf(fp, "%d %d %s\n", p->passwd_id, p->user_id, p->passwd_content);
-
+        write(fd, p, sizeof(passwd));
         p = p->next;
     }
 
-    fclose(fp);
+    close(fd);
     return 0;
 }
 
@@ -168,28 +164,23 @@ passwd *getPasswdByUserId(int user_id) {
 }
 
 int readLog() {
-    FILE *fp;
+    int fd;
+    int size;
     log *p = (log *) malloc(sizeof(log));
     log *q = (log *) malloc(sizeof(log));
     LOG_HEAD = p;
-    LOG_MAXID = -1;
+    LOG_MAXID = 0;
 
-    fp = fopen(LOG_PATH, "r+");
-    if (fp == NULL) {
-        fp = fopen(LOG_PATH, "w+");
-        free(q);
-        return 0;
+    fd = open(LOG_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
-    while (!feof(fp)) {
-        fscanf(fp, "%d %d %d %s %d\n", &(q->log_id), &(q->user_id), &(q->book_id),
-                q->log_content, &(q->log_status));
-
-        /* update log_MAXID*/
+    while ((size = read(fd, q, sizeof(log))) != 0) {
         if (q->log_id > LOG_MAXID) {
             LOG_MAXID = q->log_id;
         }
-
         p->next = q;
         p = q;
         q = (log *) malloc(sizeof(log));
@@ -197,51 +188,47 @@ int readLog() {
 
     p->next = NULL;
     free(q);
-    fclose(fp);
+    close(fd);
     return 0;
 }
 
 int writeLog() {
-    FILE *fp;
-    fp = fopen(LOG_PATH, "w+");
-    if (fp == NULL) {
-        perror("write_log() fopen error");
-        return -1;
+    int fd;
+
+    fd = open(LOG_PATH, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
     log *p = LOG_HEAD->next;
     while (p) {
-        fprintf(fp, "%d %d %d %s %d\n", p->log_id, p->user_id, p->book_id,
-               p->log_content, p->log_status);
+        write(fd, p, sizeof(log));
         p = p->next;
     }
-    fclose(fp);
+
+    close(fd);
     return 0;
 }
 
 int readBook() {
-    FILE *fp;
+    int fd;
+    int size;
     book *p = (book *) malloc(sizeof(book));
     book *q = (book *) malloc(sizeof(book));
     BOOK_HEAD = p;
-    BOOK_MAXID = -1;
+    BOOK_MAXID = 0;
 
-    fp = fopen(BOOK_PATH, "r+");
-    if (fp == NULL) {
-        fp = fopen(BOOK_PATH, "w+");
-        free(q);
-        return 0;
+    fd = open(BOOK_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
-    while (!feof(fp)) {
-        fscanf(fp, "%d %s %s %s %d %lf\n", &(q->book_id), q->book_isbn, q->book_name,
-               q->book_author, &(q->book_number), &(q->book_price));
-
-        /* update book_MAXID*/
+    while ((size = read(fd, q, sizeof(book))) != 0) {
         if (q->book_id > BOOK_MAXID) {
             BOOK_MAXID = q->book_id;
         }
-
         p->next = q;
         p = q;
         q = (book *) malloc(sizeof(book));
@@ -249,26 +236,26 @@ int readBook() {
 
     p->next = NULL;
     free(q);
-    fclose(fp);
+    close(fd);
     return 0;
-
 }
 
 int writeBook() {
-    FILE *fp;
-    fp = fopen(BOOK_PATH, "w+");
-    if (fp == NULL) {
-        perror("write_book() fopen error");
-        return -1;
+    int fd;
+
+    fd = open(BOOK_PATH, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
     book *p = BOOK_HEAD->next;
     while (p) {
-        fprintf(fp, "%d %s %s %s %d %lf\n", p->book_id, p->book_isbn, p->book_name,
-                p->book_author, p->book_number, p->book_price);
+        write(fd, p, sizeof(book));
         p = p->next;
     }
-    fclose(fp);
+
+    close(fd);
     return 0;
 }
 
@@ -316,26 +303,23 @@ book *getBookByBookId(int book_id) {
 }
 
 int readBorrow() {
-    FILE *fp;
+    int fd;
+    int size;
     borrow *p = (borrow *) malloc(sizeof(borrow));
     borrow *q = (borrow *) malloc(sizeof(borrow));
     BORROW_HEAD = p;
-    BORROW_MAXID = -1;
+    BORROW_MAXID = 0;
 
-    fp = fopen(BORROW_PATH, "r+");
-    if (fp == NULL) {
-        fp = fopen(BORROW_PATH, "w+");
-        free(q);
-        return 0;
+    fd = open(BORROW_PATH, O_RDONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
-    while (!feof(fp)) {
-        fscanf(fp, "%d %d %d\n", &(q->borrow_id), &(q->user_id), &(q->book_id));
-        /* update borrow_MAXID*/
+    while ((size = read(fd, q, sizeof(borrow))) != 0) {
         if (q->borrow_id > BORROW_MAXID) {
             BORROW_MAXID = q->borrow_id;
         }
-
         p->next = q;
         p = q;
         q = (borrow *) malloc(sizeof(borrow));
@@ -343,24 +327,26 @@ int readBorrow() {
 
     p->next = NULL;
     free(q);
-    fclose(fp);
+    close(fd);
     return 0;
 }
 
 int writeBorrow() {
-    FILE *fp;
-    fp = fopen(BORROW_PATH, "w+");
-    if (fp == NULL) {
-        perror("write_borrow() fopen error");
-        return -1;
+    int fd;
+
+    fd = open(BORROW_PATH, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        exit(1);
     }
 
     borrow *p = BORROW_HEAD->next;
     while (p) {
-        fprintf(fp, "%d %d %d\n", p->borrow_id, p->user_id, p->book_id);
+        write(fd, p, sizeof(borrow));
         p = p->next;
     }
-    fclose(fp);
+
+    close(fd);
     return 0;
 }
 

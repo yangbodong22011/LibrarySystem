@@ -19,11 +19,15 @@
 #include "log.h"
 
 char *getTimeNow() {
+    char *timestr;
     time_t rawtime;
     struct tm *timeinfo;
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    return asctime(timeinfo);
+    timestr = asctime(timeinfo);
+    /* del \n */
+    timestr[strlen(timestr) - 1] = '\0';
+    return timestr;
 }
 
 //int Mvwprintw(WINDOW *win, int y, int x, const char *fmt, ...) {
@@ -86,6 +90,11 @@ int loginSys(WINDOW *win) {
 
     wscanw(win, "%s", user_stid);
 
+    u = getUserByUserStid(user_stid);
+    if (u == NULL) {
+        return -1;
+    }
+
     LOCK;
     mvwprintw(win, 2, 1, "2. please input userPasswd, <not display>:");
     wrefresh(win);
@@ -95,20 +104,14 @@ int loginSys(WINDOW *win) {
     wscanw(win, "%s", passwd_content);
     echo();
 
-    u = getUserByUserStid(user_stid);
-    if (u == NULL) {
-        return -1;
-    }
-
     p = getPasswdByUserId(u->user_id);
 
     if (strcmp(passwd_content, p->passwd_content) == 0) {
         /* if passwd right, we initMe */
         initMe(u);
         return 0;
-    } else {
-        return -1;
     }
+    return -1;
 }
 
 void adminReaderList(WINDOW *win) {
@@ -204,9 +207,10 @@ void adminReaderAdd(WINDOW *win) {
         w->user_id = q->user_id;
 
         /* init log  */
-        z->user_id = q->user_id;
-        z->book_id = -1;
+        strcpy(z->user_name, q->user_name);
+        strcpy(z->book_name, "");
         strcpy(z->log_content, LOG_ADD_USER);
+        strcpy(z->log_time, getTimeNow());
         z->log_status = 0;
 
         /* add q and w */
@@ -307,9 +311,10 @@ void adminReaderDel(WINDOW *win) {
 
             /* init log  */
             z->log_id = ++LOG_MAXID;
-            z->user_id = q->user_id;
-            z->book_id = -1;
+            strcpy(z->user_name, q->user_name);
+            strcpy(z->book_name, "");
             strcpy(z->log_content, LOG_DEL_USER);
+            strcpy(z->log_time, getTimeNow());
             z->log_status = 0;
 
             y->next = z;
@@ -623,9 +628,10 @@ void adminBookAdd(WINDOW *win) {
         wscanw(win, "%lf", &(q->book_price));
 
         /* init log  */
-        z->user_id = ME->user_id;
-        z->book_id = q->book_id;
+        strcpy(z->user_name, ME->user_name);
+        strcpy(z->book_name, q->book_name);
         strcpy(z->log_content, LOG_ADD_BOOK);
+        strcpy(z->log_time, getTimeNow());
         z->log_status = 1;
 
         /* add q and w */
@@ -736,9 +742,10 @@ void adminBookDel(WINDOW *win) {
 
             /* init log  */
             z->log_id = ++LOG_MAXID;
-            z->user_id = ME->user_id;
-            z->book_id = q->book_id;
+            strcpy(z->user_name, ME->user_name);
+            strcpy(z->book_name, q->book_name);
             strcpy(z->log_content, LOG_DEL_BOOK);
+            strcpy(z->log_time, getTimeNow());
             z->log_status = 1;
 
             y->next = z;
@@ -980,9 +987,10 @@ void adminBorrowBorrow(WINDOW *win) {
             }
 
             /* init log  */
-            z->user_id = u->user_id;
-            z->book_id = b->book_id;
+            strcpy(z->user_name, ME->user_name);
+            strcpy(z->book_name, b->book_name);
             strcpy(z->log_content, LOG_BORROW_BOOK);
+            strcpy(z->log_time, getTimeNow());
             z->log_status = 1;
 
             /* add q and w */
@@ -1085,9 +1093,10 @@ void adminBorrowReturn(WINDOW *win) {
 
                 /* init log  */
                 z->log_id = ++LOG_MAXID;
-                z->user_id = u->user_id;
-                z->book_id = b->book_id;
+                strcpy(z->user_name, u->user_name);
+                strcpy(z->book_name, b->book_name);
                 strcpy(z->log_content, LOG_RETURN_BOOK);
+                strcpy(z->log_time, getTimeNow());
                 z->log_status = 1;
 
                 y->next = z;
@@ -1291,6 +1300,8 @@ void loop(WINDOW *win) {
         userFunc(win);
     }
 
+//    adminFunc(win);
+
 }
 
 void *threadMenu(void *p) {
@@ -1305,8 +1316,6 @@ void *threadMenu(void *p) {
         menuLogin(windowMenu);
         UNLOCK;
         wscanw(windowMenu, "%d", &choice);
-        //mvwprintw(windowMenu, 8, 1, "%d", choice);
-        //wrefresh(windowMenu);
         switch (choice) {
             case 1:
                 /* login, we begin load data */
@@ -1328,38 +1337,33 @@ void *threadMenu(void *p) {
 void *threadNews(void *p) {
     WINDOW *windowNews;
     log *l;
-    user *u;
-    book *b;
 
     LOCK;
     windowNews = createWindow(WIN_NEWS);
     UNLOCK;
     for (;;) {
-        int x = 1;
+        int x = 2;
         if (LOG_HEAD == NULL) {
             continue;
+        } else {
+            l = LOG_HEAD->next;
         }
-        l = LOG_HEAD->next;
         LOCK;
-        for (int i = 0; i < 10; ++i) {
+        mvwprintw(windowNews, 1, WIN_NEWS.width/2-10, "System Log");
+        for (int i = 0; i < 5; ++i) {
             if (l) {
                 if (l->log_status == 0) {
-                    u = getUserByUserId(l->user_id);
-                    mvwprintw(windowNews, x, 1, "%d. %s : %s", l->log_id, u->user_name, l->log_content);
+                    mvwprintw(windowNews, x, 1, "%d. %s:%s:%s", l->log_id, l->user_name, l->log_content, l->log_time);
                 } else if (l->log_status == 1) {
-                    u = getUserByUserId(l->user_id);
-                    b = getBookByBookId(l->book_id);
-                    mvwprintw(windowNews, x, 1, "%d. %s : %s : %s", l->log_id, u->user_name, b->book_name, l->log_content);
+                    mvwprintw(windowNews, x, 1, "%d. %s:%s:%s:%s", l->log_id, l->user_name, l->book_name, l->log_content, l->log_time);
                 }
-                l = l->next;
                 wrefresh(windowNews);
+                l = l->next;
             }
             x += 1;
         }
         UNLOCK;
-
-        sleep(5);
-
+        sleep(1);
         LOCK;
         clearWindow(windowNews);
         UNLOCK;

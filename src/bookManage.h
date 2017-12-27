@@ -18,7 +18,7 @@ typedef struct user {
     char user_name[16];
     char user_address[32];
     char user_mail[16];
-    uint8_t user_status;
+    int user_status;
     struct user *next;
 } user;
 
@@ -48,10 +48,10 @@ typedef struct borrow {
 
 typedef struct log {
     int log_id;
-    int user_id;
-    int book_id;
+    char user_name[16];
+    char book_name[16];
     char log_content[32];
-    uint8_t log_status;
+    int log_status;
     char log_time[32];
     struct log *next;
 } log;
